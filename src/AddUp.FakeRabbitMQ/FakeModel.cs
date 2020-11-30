@@ -206,6 +206,15 @@ namespace AddUp.RabbitMQ.Fakes
 
                 NotifyConsumerOfExistingMessages(consumerTag, consumer, queueInstance);
                 NotifyConsumerWhenMessagesAreReceived(consumerTag, consumer, queueInstance);
+
+                if (consumer is IAsyncBasicConsumer asyncBasicConsumer)
+                {
+                    asyncBasicConsumer.HandleBasicConsumeOk(consumerTag).GetAwaiter().GetResult();
+                }
+                else
+                {
+                    consumer.HandleBasicConsumeOk(consumerTag);
+                }
             }
 
             return consumerTag;
