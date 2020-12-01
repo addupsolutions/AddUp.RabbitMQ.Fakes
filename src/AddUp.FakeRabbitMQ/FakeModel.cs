@@ -68,7 +68,19 @@ namespace AddUp.RabbitMQ.Fakes
         public void ChannelFlow(bool active) => IsChannelFlowActive = active;
         public IBasicPublishBatch CreateBasicPublishBatch() => new FakeBasicPublishBatch(this);
 
-        public void ExchangeDeclarePassive(string exchange) => ExchangeDeclare(exchange, null, false, false, null);
+        public void ExchangeDeclarePassive(string exchange)
+        {
+            if (!server.Exchanges.ContainsKey(exchange))
+            {
+                var shutdownArgs = new ShutdownEventArgs(initiator: ShutdownInitiator.Peer,
+                    replyText: $"NOT_FOUND - no exchange '{exchange}' in vhost '/'",
+                    replyCode: 404,
+                    classId: 40,
+                    methodId: 10);
+                throw new OperationInterruptedException(shutdownArgs);
+            }
+        }
+
         public void ExchangeDeclare(string exchange, string type) => ExchangeDeclare(exchange, type, false, false, null);
         public void ExchangeDeclare(string exchange, string type, bool durable) => ExchangeDeclare(exchange, type, durable, false, null);
         public void ExchangeDeclareNoWait(string exchange, string type, bool durable, bool autoDelete, IDictionary<string, object> arguments) =>
@@ -126,7 +138,20 @@ namespace AddUp.RabbitMQ.Fakes
         }
 
         public QueueDeclareOk QueueDeclare() => QueueDeclare(Guid.NewGuid().ToString(), false, false, false, null);
-        public QueueDeclareOk QueueDeclarePassive(string queue) => QueueDeclare(queue, false, false, false, null);
+        public QueueDeclareOk QueueDeclarePassive(string queue)
+        {
+            if (server.Queues.TryGetValue(queue, out var rabbitQueue))
+            {
+                return new QueueDeclareOk(queue, (uint)unchecked(rabbitQueue.Messages.Count), (uint)unchecked(rabbitQueue.ConsumerCount));
+            }
+            var shutdownArgs = new ShutdownEventArgs(initiator: ShutdownInitiator.Peer,
+                    replyText: $"NOT_FOUND - no queue '{queue}' in vhost '/'",
+                    replyCode: 404,
+                    classId: 50,
+                    methodId: 10);
+            throw new OperationInterruptedException(shutdownArgs);
+        }
+
         public void QueueDeclareNoWait(string queue, bool durable, bool exclusive, bool autoDelete, IDictionary<string, object> arguments) =>
             QueueDeclare(queue, durable, exclusive, autoDelete, arguments);
         public QueueDeclareOk QueueDeclare(string queue, bool durable, bool exclusive, bool autoDelete, IDictionary<string, object> arguments)
