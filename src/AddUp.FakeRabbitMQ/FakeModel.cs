@@ -75,7 +75,7 @@ namespace AddUp.RabbitMQ.Fakes
             ExchangeDeclare(exchange, type, durable, false, arguments);
         public void ExchangeDeclare(string exchange, string type, bool durable, bool autoDelete, IDictionary<string, object> arguments)
         {
-            var exchangeInstance = new RabbitExchange(type)
+            var exchangeInstance = new RabbitExchange(type, server)
             {
                 Name = exchange,
                 IsDurable = durable,
@@ -318,7 +318,7 @@ namespace AddUp.RabbitMQ.Fakes
 
             RabbitExchange addExchange(string s)
             {
-                var newExchange = new RabbitExchange(ExchangeType.Direct)
+                var newExchange = new RabbitExchange(ExchangeType.Direct, server)
                 {
                     Name = exchange,
                     Arguments = null,
